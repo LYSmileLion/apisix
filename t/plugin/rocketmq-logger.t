@@ -54,6 +54,8 @@ __DATA__
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body
 done
 
@@ -71,6 +73,8 @@ done
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body
 property "nameserver_list" is required
 done
@@ -96,6 +100,8 @@ done
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body
 property "timeout" validation failed: wrong type: expected integer, got string
 done
@@ -158,6 +164,8 @@ done
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 
@@ -233,6 +241,8 @@ hello world
             local res, err = httpc:request_uri(uri, {method = "GET"})
         }
     }
+--- request
+GET /t
 --- error_log
 failed to send data to rocketmq topic
 [error]
@@ -274,6 +284,8 @@ failed to send data to rocketmq topic
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 
@@ -331,6 +343,8 @@ abcdef
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 
@@ -385,6 +399,8 @@ connection: close
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 
@@ -457,6 +473,8 @@ qr/send data to rocketmq: \{.*"upstream":"127.0.0.1:1980"/
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 
@@ -504,6 +522,8 @@ hello world
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 
@@ -554,6 +574,8 @@ qr/send data to rocketmq: \{.*"upstream":"127.0.0.1:1980"/
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 
@@ -595,6 +617,8 @@ passed
             ngx.sleep(0.5)
         }
     }
+--- request
+GET /t
 --- timeout: 5s
 --- ignore_response
 
@@ -640,6 +664,8 @@ qr/queue: 2/]
             ngx.sleep(0.5)
         }
     }
+--- request
+GET /t
 --- timeout: 5s
 --- ignore_response
 

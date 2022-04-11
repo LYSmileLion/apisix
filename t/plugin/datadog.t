@@ -31,7 +31,7 @@ add_block_preprocessor(sub {
     server {
         listen 8125 udp;
         content_by_lua_block {
-            require("lib.mock_layer4").dogstatsd()
+            require("lib.mock_dogstatsd").go()
         }
     }
 _EOC_

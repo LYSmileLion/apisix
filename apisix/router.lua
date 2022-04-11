@@ -44,7 +44,7 @@ local function filter(route)
         end
     end
 
-    apisix_upstream.filter_upstream(route.value.upstream, route)
+    apisix_upstream.filter_upstream(route.value.upstream, route) --如果route里面有upstream的详细信息，则进行
 
     core.log.info("filter route: ", core.json.delay_encode(route, true))
 end
@@ -82,8 +82,8 @@ function _M.http_init_worker()
     end
 
     local router_http = require("apisix.http.router." .. router_http_name)
-    attach_http_router_common_methods(router_http)
-    router_http.init_worker(filter)
+    attach_http_router_common_methods(router_http) --将router_http的init方法attch到router_http上
+    router_http.init_worker(filter) 
     _M.router_http = router_http
 
     local router_ssl = require("apisix.ssl.router." .. router_ssl_name)

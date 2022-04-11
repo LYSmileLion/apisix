@@ -35,7 +35,7 @@ function _M.create_radixtree_uri_router(routes, uri_routes, with_parameter)
 
     core.table.clear(uri_routes)
 
-    for _, route in ipairs(routes) do
+    for _, route in ipairs(routes) do -- route表示每一个/apisix/routes/中的每个路由
         if type(route) == "table" then
             local status = core.table.try_read_attr(route, "value", "status")
             -- check the status

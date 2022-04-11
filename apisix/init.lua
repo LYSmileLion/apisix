@@ -117,7 +117,7 @@ function _M.http_init_worker()
     require("apisix.debug").init_worker()
 
     plugin.init_worker()
-    router.http_init_worker()
+    router.http_init_worker() --router 表示api中所有跟路由相关的模块，比如sni匹配，global的api匹配，普通的api匹配
     require("apisix.http.service").init_worker()
     plugin_config.init_worker()
     require("apisix.consumer").init_worker()
@@ -279,7 +279,7 @@ end
 local function get_upstream_by_id(up_id)
     local upstreams = core.config.fetch_created_obj("/upstreams")
     if upstreams then
-        local upstream = upstreams:get(tostring(up_id))
+        local upstream = upstreams:get(tostring(up_id)) --获取对应upstream内容，为kvs_to_node转换的值
         if not upstream then
             core.log.error("failed to find upstream by id: " .. up_id)
             if is_http then
@@ -303,7 +303,7 @@ local function get_upstream_by_id(up_id)
         end
 
         core.log.info("parsed upstream: ", core.json.delay_encode(upstream, true))
-        return upstream.dns_value or upstream.value
+        return upstream.dns_value or upstream.value --直接返回upstream的配置内容
     end
 end
 
@@ -354,7 +354,7 @@ function _M.http_access_phase()
     local api_ctx = core.tablepool.fetch("api_ctx", 0, 32)
     ngx_ctx.api_ctx = api_ctx
 
-    core.ctx.set_vars_meta(api_ctx)
+    core.ctx.set_vars_meta(api_ctx) --给api_ctx.var设置元表，可以通过api_ctx.var查询各种变量
 
     debug.dynamic_debug(api_ctx)
 
@@ -372,12 +372,22 @@ function _M.http_access_phase()
     -- the original request_uri can be accessed via var.real_request_uri
     api_ctx.var.real_request_uri = api_ctx.var.request_uri
     api_ctx.var.request_uri = api_ctx.var.uri .. api_ctx.var.is_args .. (api_ctx.var.args or "")
+		--插件所拥有的api为内部API，此部分为如果本次的请求是内部API，则采用特殊的处理方式
+    if router.api.has_route_not_under_apisix() or
+        core.string.has_prefix(uri, "/apisix/") --以/apisix开头的为内部api
+    then
+        local skip = local_conf and local_conf.apisix.global_rule_skip_internal_api
+        local matched = router.api.match(api_ctx, skip)
+        if matched then
+            return
+        end
+    end
 
     router.router_http.match(api_ctx)
 
     local route = api_ctx.matched_route
     if not route then
-        -- run global rule when there is no matching route
+        -- run global rule
         plugin.run_global_rules(api_ctx, router.global_rules, nil)
 
         core.log.info("not find any matched route")
@@ -456,8 +466,6 @@ function _M.http_access_phase()
                 api_ctx.matched_route = route
                 core.table.clear(api_ctx.plugins)
                 api_ctx.plugins = plugin.filter(api_ctx, route, api_ctx.plugins)
-                -- rerun rewrite phase for newly added plugins in consumer
-                plugin.run_plugin("rewrite_in_consumer", api_ctx.plugins, api_ctx)
             end
         end
         plugin.run_plugin("access", plugins, api_ctx)
@@ -572,27 +580,8 @@ end
 
 
 local function set_resp_upstream_status(up_status)
-    local_conf = core.config.local_conf()
-
-    if local_conf.apisix and local_conf.apisix.show_upstream_status_in_response_header then
-        core.response.set_header("X-APISIX-Upstream-Status", up_status)
-    elseif #up_status == 3 then
-        if tonumber(up_status) >= 500 and tonumber(up_status) <= 599 then
-            core.response.set_header("X-APISIX-Upstream-Status", up_status)
-        end
-    elseif #up_status > 3 then
-        -- the up_status can be "502, 502" or "502, 502 : "
-        local last_status
-        if str_byte(up_status, -1) == str_byte(" ") then
-            last_status = str_sub(up_status, -6, -3)
-        else
-            last_status = str_sub(up_status, -3)
-        end
-
-        if tonumber(last_status) >= 500 and tonumber(last_status) <= 599 then
-            core.response.set_header("X-APISIX-Upstream-Status", up_status)
-        end
-    end
+    core.response.set_header("X-APISIX-Upstream-Status", up_status)
+    core.log.info("X-APISIX-Upstream-Status: ", up_status)
 end
 
 
@@ -610,8 +599,23 @@ function _M.http_header_filter_phase()
     core.response.set_header("Server", ver_header)
 
     local up_status = get_var("upstream_status")
-    if up_status then
+    if up_status and #up_status == 3
+       and tonumber(up_status) >= 500
+       and tonumber(up_status) <= 599
+    then
         set_resp_upstream_status(up_status)
+    elseif up_status and #up_status > 3 then
+        -- the up_status can be "502, 502" or "502, 502 : "
+        local last_status
+        if str_byte(up_status, -1) == str_byte(" ") then
+            last_status = str_sub(up_status, -6, -3)
+        else
+            last_status = str_sub(up_status, -3)
+        end
+
+        if tonumber(last_status) >= 500 and tonumber(last_status) <= 599 then
+            set_resp_upstream_status(up_status)
+        end
     end
 
     common_phase("header_filter")
@@ -623,7 +627,7 @@ function _M.http_header_filter_phase()
 
     local debug_headers = api_ctx.debug_headers
     if debug_headers then
-        local deduplicate = core.table.new(core.table.nkeys(debug_headers), 0)
+        local deduplicate = core.table.new(#debug_headers, 0)
         for k, v in pairs(debug_headers) do
             core.table.insert(deduplicate, k)
         end

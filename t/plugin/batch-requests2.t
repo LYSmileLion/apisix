@@ -33,7 +33,6 @@ add_block_preprocessor(sub {
 
     my $extra_yaml_config = <<_EOC_;
 plugins:
-    - public-api
     - batch-requests
 _EOC_
 
@@ -44,33 +43,7 @@ run_tests;
 
 __DATA__
 
-=== TEST 1: pre-create public API route
---- config
-    location /t {
-        content_by_lua_block {
-            local t = require("lib.test_admin").test
-            local code, body = t('/apisix/admin/routes/1',
-                 ngx.HTTP_PUT,
-                 [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/apisix/batch-requests"
-                 }]]
-                )
-
-            if code >= 300 then
-                ngx.status = code
-            end
-            ngx.say(body)
-        }
-    }
---- response_body
-passed
-
-
-
-=== TEST 2: customize uri, not found
+=== TEST 1: customize uri, not found
 --- yaml_config
 plugin_attr:
     batch-requests:
@@ -107,36 +80,12 @@ plugin_attr:
         }
     }
 --- error_code: 404
+--- no_error_log
+[error]
 
 
 
-=== TEST 3: create public API route for custom uri
---- config
-    location /t {
-        content_by_lua_block {
-            local t = require("lib.test_admin").test
-            local code, body = t('/apisix/admin/routes/2',
-                 ngx.HTTP_PUT,
-                 [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/foo/bar"
-                 }]]
-                )
-
-            if code >= 300 then
-                ngx.status = code
-            end
-            ngx.say(body)
-        }
-    }
---- response_body
-passed
-
-
-
-=== TEST 4: customize uri, found
+=== TEST 2: customize uri, found
 --- yaml_config
 plugin_attr:
     batch-requests:
@@ -200,7 +149,7 @@ plugin_attr:
 
 
 
-=== TEST 5: customize uri, missing plugin, use default
+=== TEST 3: customize uri, missing plugin, use default
 --- yaml_config
 plugin_attr:
     x:
@@ -239,7 +188,7 @@ plugin_attr:
 
 
 
-=== TEST 6: customize uri, missing attr, use default
+=== TEST 4: customize uri, missing attr, use default
 --- yaml_config
 plugin_attr:
     batch-requests:
@@ -278,7 +227,7 @@ plugin_attr:
 
 
 
-=== TEST 7: ensure real ip header is overridden
+=== TEST 5: ensure real ip header is overridden
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -327,7 +276,7 @@ passed
 
 
 
-=== TEST 8: ensure real ip header is overridden, header from the pipeline
+=== TEST 6: ensure real ip header is overridden, header from the pipeline
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -378,7 +327,7 @@ passed
 
 
 
-=== TEST 9: ensure real ip header is overridden, header has underscore
+=== TEST 7: ensure real ip header is overridden, header has underscore
 --- config
     location = /aggregate {
         content_by_lua_block {

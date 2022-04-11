@@ -1,5 +1,5 @@
 {
-  "version": "2.12.0",
+  "version": "2.12.1",
   "sidebar": [
     {
       "type": "category",
@@ -52,8 +52,7 @@
             "plugins/proxy-rewrite",
             "plugins/grpc-transcode",
             "plugins/grpc-web",
-            "plugins/fault-injection",
-            "plugins/mocking"
+            "plugins/fault-injection"
           ]
         },
         {
@@ -67,8 +66,7 @@
             "plugins/basic-auth",
             "plugins/openid-connect",
             "plugins/hmac-auth",
-            "plugins/authz-casbin",
-            "plugins/forward-auth"
+            "plugins/authz-casbin"
           ]
         },
         {
@@ -80,8 +78,7 @@
             "plugins/ip-restriction",
             "plugins/ua-restriction",
             "plugins/referer-restriction",
-            "plugins/consumer-restriction",
-            "plugins/csrf"
+            "plugins/consumer-restriction"
           ]
         },
         {
@@ -97,51 +94,35 @@
             "plugins/api-breaker",
             "plugins/traffic-split",
             "plugins/request-id",
-            "plugins/proxy-control",
             "plugins/client-control"
           ]
         },
         {
           "type": "category",
-          "label": "Observability",
+          "label": "Monitoring",
           "items": [
-            {
-              "type": "category",
-              "label": "Tracers",
-              "items": [
-                "plugins/zipkin",
-                "plugins/skywalking",
-                "plugins/opentelemetry"
-              ]
-            },
-            {
-              "type": "category",
-              "label": "Metrics",
-              "items": [
-                "plugins/prometheus",
-                "plugins/node-status"
-              ]
-            },
-            {
-              "type": "category",
-              "label": "Loggers",
-              "items": [
-                "plugins/http-logger",
-                "plugins/skywalking-logger",
-                "plugins/tcp-logger",
-                "plugins/kafka-logger",
-                "plugins/rocketmq-logger",
-                "plugins/udp-logger",
-                "plugins/clickhouse-logger",
-                "plugins/syslog",
-                "plugins/log-rotate",
-                "plugins/error-log-logger",
-                "plugins/sls-logger",
-                "plugins/google-cloud-logging",
-                "plugins/splunk-hec-logging",
-                "plugins/file-logger"
-              ]
-            }
+            "plugins/prometheus",
+            "plugins/zipkin",
+            "plugins/skywalking",
+            "plugins/node-status"
+          ]
+        },
+        {
+          "type": "category",
+          "label": "Loggers",
+          "items": [
+            "plugins/http-logger",
+            "plugins/skywalking-logger",
+            "plugins/tcp-logger",
+            "plugins/kafka-logger",
+            "plugins/rocketmq-logger",
+            "plugins/udp-logger",
+            "plugins/syslog",
+            "plugins/log-rotate",
+            "plugins/error-log-logger",
+            "plugins/sls-logger",
+            "plugins/google-cloud-logging",
+            "plugins/splunk-hec-logging"
           ]
         },
         {
@@ -190,8 +171,7 @@
             "discovery",
             "discovery/dns",
             "discovery/nacos",
-            "discovery/eureka",
-            "discovery/kubernetes"
+            "discovery/eureka"
           ]
         },
         {
@@ -241,6 +221,10 @@
         {
           "type": "doc",
           "id": "plugin-develop"
+        },
+        {
+          "type": "doc",
+          "id": "plugin-interceptors"
         },
         {
           "type": "doc",

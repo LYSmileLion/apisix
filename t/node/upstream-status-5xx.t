@@ -118,7 +118,7 @@ GET /mysleep?seconds=1
 --- error_code: 504
 --- response_body eval
 qr/504 Gateway Time-out/
---- response_headers
+--- error_log
 X-APISIX-Upstream-Status: 504
 
 
@@ -163,7 +163,7 @@ GET /hello
 --- error_code: 502
 --- response_body eval
 qr/502 Bad Gateway/
---- response_headers
+--- error_log
 X-APISIX-Upstream-Status: 502
 
 
@@ -208,7 +208,7 @@ GET /server_error
 --- error_code: 500
 --- response_body_like
 .*apisix.apache.org.*
---- response_headers
+--- error_log
 X-APISIX-Upstream-Status: 500
 
 
@@ -322,7 +322,7 @@ passed
 --- request
 GET /hello
 --- error_code: 502
---- response_headers_raw_like eval
+--- error_log eval
 qr/X-APISIX-Upstream-Status: 502, 502, 502/
 
 

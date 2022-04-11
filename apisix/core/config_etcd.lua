@@ -15,10 +15,6 @@
 -- limitations under the License.
 --
 
---- Get configuration information.
---
--- @module core.config_etcd
-
 local table        = require("apisix.core.table")
 local config_local = require("apisix.core.config_local")
 local log          = require("apisix.core.log")
@@ -110,7 +106,7 @@ local function readdir(etcd_cli, key, formatter)
     if type(res.body) ~= "table" then
         return nil, "failed to read etcd dir"
     end
-
+		--将etcd原有响应格式转换为apisix的格式
     res, err = etcd_apisix.get_format(res, key .. '/', true, formatter)
     if not res then
         return nil, err
@@ -169,16 +165,16 @@ local function short_key(self, str)
     return sub_str(str, #self.key + 2)
 end
 
-
+--dir res表示res.body中的内容，res.body中为res.body.nodes(已经kvs_to_nodes)
 local function load_full_data(self, dir_res, headers)
     local err
     local changed = false
 
-    if self.single_item then
+    if self.single_item then --表示这个obj里面只有一个值，如plugin，像routes或者services都是一个列表。
         self.values = new_tab(1, 0)
         self.values_hash = new_tab(0, 1)
 
-        local item = dir_res
+        local item = dir_res --如果只有一个值，则为dir_res.value dir_res.key，比如obj plugin。如果有多个值，则为dir_res.nodes[1].value ...比如services，routes。
         local data_valid = item.value ~= nil
 
         if data_valid and self.item_schema then
@@ -209,7 +205,7 @@ local function load_full_data(self, dir_res, headers)
             end
         end
 
-        self:upgrade_version(item.modifiedIndex)
+        self:upgrade_version(item.modifiedIndex) --使用etcd modifedindex作为更新序列
 
     else
         if not dir_res.nodes then
@@ -258,7 +254,7 @@ local function load_full_data(self, dir_res, headers)
                 end
             end
 
-            self:upgrade_version(item.modifiedIndex)
+            self:upgrade_version(item.modifiedIndex)--最后使用modifedIndex表示此obj（有多个值，比如services，routes等）的版本
         end
     end
 
@@ -286,7 +282,7 @@ function _M.upgrade_version(self, new_ver)
         return
     end
 
-    self.prev_index = new_ver
+    self.prev_index = new_ver --表示obj上一次更新的时候，使用的etcd modify index值，作为一个版本号使用
     return
 end
 
@@ -296,7 +292,7 @@ local function sync_data(self)
         return nil, "missing 'key' arguments"
     end
 
-    if self.need_reload then
+    if self.need_reload then --在config.new的时候，会调用load_full_data，此函数中一次性载入所有obj的相关value，此时会将need_reload设置为false
         local res, err = readdir(self.etcd_cli, self.key)
         if not res then
             return false, err
@@ -328,7 +324,7 @@ local function sync_data(self)
         return true
     end
 
-    local dir_res, err = waitdir(self.etcd_cli, self.key, self.prev_index + 1, self.timeout)
+    local dir_res, err = waitdir(self.etcd_cli, self.key, self.prev_index + 1, self.timeout) -- etcd.lua中返回的watch format格式
     log.info("waitdir key: ", self.key, " prev_index: ", self.prev_index + 1)
     log.info("res: ", json.delay_encode(dir_res, true))
 
@@ -355,7 +351,7 @@ local function sync_data(self)
 
     local res_copy = res
     -- waitdir will return [res] even for self.single_item = true
-    for _, res in ipairs(res_copy) do
+    for _, res in ipairs(res_copy) do --watch返回来的都是数组，即使像/plugin这种只有一个值的obj
         local key
         if self.single_item then
             key = self.key
@@ -401,7 +397,7 @@ local function sync_data(self)
         end
 
         local pre_index = self.values_hash[key]
-        if pre_index then
+        if pre_index then --以前就有这个key，则为更新
             local pre_val = self.values[pre_index]
             if pre_val and pre_val.clean_handlers then
                 for _, clean_handler in ipairs(pre_val.clean_handlers) do
@@ -419,14 +415,14 @@ local function sync_data(self)
                 res.clean_handlers = {}
                 log.info("update data by key: ", key)
 
-            else
+            else --以前有这个key，但是value没了，则为删除
                 self.sync_times = self.sync_times + 1
                 self.values[pre_index] = false
                 self.values_hash[key] = nil
                 log.info("delete data by key: ", key)
             end
 
-        elseif res.value then
+        elseif res.value then --以前没有这个key，则为插入
             res.clean_handlers = {}
             insert_tab(self.values, res)
             self.values_hash[key] = #self.values
@@ -583,10 +579,7 @@ local function _automatic_fetch(premature, self)
                     end
                 end
 
-                -- etcd watch timeout is an expected error, so there is no need for resync_delay
-                if err ~= "timeout" then
-                    ngx_sleep(self.resync_delay + rand() * 0.5 * self.resync_delay)
-                end
+                ngx_sleep(self.resync_delay + rand() * 0.5 * self.resync_delay)
             elseif not ok then
                 -- no error. reentry the sync with different state
                 ngx_sleep(0.05)
@@ -608,28 +601,6 @@ local function _automatic_fetch(premature, self)
 end
 
 
----
--- Create a new connection to communicate with the control plane.
--- This function should be used in the `init_worker_by_lua` phase.
---
--- @function core.config.new
--- @tparam string etcd directory to be monitored, e.g. "/routes".
--- @tparam table opts Parameters related to the etcd client connection.
--- The keys in `opts` are as follows:
---  * automatic: whether to get the latest etcd data automatically
---  * item_schema: the jsonschema that checks the value of each item under the **key** directory
---  * filter: the custom function to filter the value of each item under the **key** directory
---  * timeout: the timeout for watch operation, default is 30s
---  * single_item: whether only one item under the **key** directory
---  * checker: the custom function to check the value of each item under the **key** directory
--- @treturn table The etcd client connection.
--- @usage
--- local plugins_conf, err = core.config.new("/custom_dir", {
---    automatic = true,
---    filter = function(item)
---        -- called once before reload for sync data from admin
---    end,
---})
 function _M.new(key, opts)
     local local_conf, err = config_local.local_conf()
     if not local_conf then
@@ -654,7 +625,7 @@ function _M.new(key, opts)
     local single_item = opts and opts.single_item
     local checker = opts and opts.checker
 
-    local obj = setmetatable({
+    local obj = setmetatable({ --相当于在apisix中每个实体，比如upstream,service,consumer等，都会有一个obj进行代表，obj里面存储这这个实体所有的内容，以及设置等等要求
         etcd_cli = nil,
         key = key and prefix .. key,
         automatic = automatic,
@@ -663,7 +634,7 @@ function _M.new(key, opts)
         sync_times = 0,
         running = true,
         conf_version = 0,
-        values = nil,
+        values = nil, --是已经经过kvs_to_node转换后的数组,不是etcd返回的response
         need_reload = true,
         routes_hash = nil,
         prev_index = 0,
@@ -687,7 +658,7 @@ function _M.new(key, opts)
 
             log.notice("use loaded configuration ", key)
 
-            local dir_res, headers = res.body, res.headers
+            local dir_res, headers = res.body, res.headers --dir_res表示res.body,body中有nodes的所有信息
             load_full_data(obj, dir_res, headers)
         end
 
@@ -764,7 +735,7 @@ local function create_formatter(prefix)
         for _, item in ipairs(res.body.kvs) do
             if curr_dir_data then
                 if core_str.has_prefix(item.key, curr_key) then
-                    table.insert(curr_dir_data, etcd_apisix.kvs_to_node(item))
+                    table.insert(curr_dir_data, etcd_apisix.kvs_to_node(item))--转换为apisix node的格式，并插入到loaded_configuration[key].body.nodes
                     goto CONTINUE
                 end
 
@@ -772,10 +743,10 @@ local function create_formatter(prefix)
             end
 
             local key = sub_str(item.key, #prefix + 1)
-            if dirs[key] then
+            if dirs[key] then --如果获取到的key直接是一个值，而不是一个目录则进行下述的操作。比如/plugin是这样的，而/routes/则是个目录，使用else部分。
                 -- single item
                 loaded_configuration[key] = {
-                    body = etcd_apisix.kvs_to_node(item),
+                    body = etcd_apisix.kvs_to_node(item),-- 针对obj只有一个值的情况，比如plugin，则body的结构为body.value, body.key
                     headers = res.headers,
                 }
             else
@@ -784,7 +755,7 @@ local function create_formatter(prefix)
                 if dirs[key] and not loaded_configuration[key] then
                     loaded_configuration[key] = {
                         body = {
-                            nodes = {},
+                            nodes = {}, 
                         },
                         headers = res.headers,
                     }
@@ -818,7 +789,7 @@ function _M.init()
 
     local etcd_conf = local_conf.etcd
     local prefix = etcd_conf.prefix
-    local res, err = readdir(etcd_cli, prefix, create_formatter(prefix))
+    local res, err = readdir(etcd_cli, prefix, create_formatter(prefix)) --初始化的时候载入目前etcd集群中已经有的配置文件
     if not res then
         return nil, err
     end

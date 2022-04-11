@@ -23,11 +23,6 @@ local str_byte  = string.byte
 local str_sub   = string.sub
 
 
-core.ctx.register_var("mqtt_client_id", function(ctx)
-    return ctx.mqtt_client_id
-end)
-
-
 local schema = {
     type = "object",
     properties = {

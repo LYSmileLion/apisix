@@ -75,6 +75,7 @@ local function set_directly(ctx, key, ver, conf)
     ctx.upstream_conf = conf
     ctx.upstream_version = ver
     ctx.upstream_key = key
+    ctx.upstream_healthcheck_parent = conf.parent
     return
 end
 _M.set = set_directly
@@ -274,12 +275,13 @@ function _M.set_by_route(route, api_ctx)
                           up_conf.discovery_type, ": ",
                           core.json.delay_encode(new_up_conf, true))
 
+						--将原来的up_conf替换，因为原有的up_conf有parent，首先将parent
             local parent = up_conf.parent
             if parent.value.upstream then
                 -- the up_conf comes from route or service
                 parent.value.upstream = new_up_conf
             else
-                parent.value = new_up_conf
+                parent.value = new_up_conf --原有kvs_to_node中的value也要指向最新的new up conf
             end
             up_conf = new_up_conf
         end
@@ -294,7 +296,7 @@ function _M.set_by_route(route, api_ctx)
     end
 
     if not is_http then
-        local ok, err = fill_node_info(up_conf, nil, true)
+        local ok, err = fill_node_info(up_conf, nil, true) --服务发现的某些节点可能缺少端口号优先级等字段，在fill_node_info函数中补齐
         if not ok then
             return 503, err
         end
@@ -470,7 +472,7 @@ function _M.check_upstream_conf(conf)
 end
 
 
-local function filter_upstream(value, parent)
+local function filter_upstream(value, parent) --value表示upstream的真正配置，而parent表示kvs_to_node转换后的这个结构体，kvs_to_node这个结构体包含了当前的value
     if not value then
         return
     end
@@ -487,7 +489,7 @@ local function filter_upstream(value, parent)
     end
 
     local nodes = value.nodes
-    if core.table.isarray(nodes) then
+    if core.table.isarray(nodes) then --upstream的node如果是个数组表示上游的机器节点
         for _, node in ipairs(nodes) do
             local host = node.host
             if not core.utils.parse_ipv4(host) and
@@ -497,7 +499,7 @@ local function filter_upstream(value, parent)
             end
         end
     else
-        local new_nodes = core.table.new(core.table.nkeys(nodes), 0)
+        local new_nodes = core.table.new(core.table.nkeys(nodes), 0) --upstream的node是个hash table，key为上游机器，value为负载相关的参数
         for addr, weight in pairs(nodes) do
             local host, port = core.utils.parse_addr(addr)
             if not core.utils.parse_ipv4(host) and

@@ -26,8 +26,8 @@ local type = type
 
 local load_time = os.time()
 local plugin_name = "server-info"
-local default_report_ttl = 60
-local lease_id
+local default_report_interval = 60
+local default_report_ttl = 7200
 
 local schema = {
     type = "object",
@@ -35,11 +35,18 @@ local schema = {
 local attr_schema = {
     type = "object",
     properties = {
+        report_interval = {
+            type = "integer",
+            description = "server info reporting interval (unit: second)",
+            default = default_report_interval,
+            minimum = 60,
+            maximum = 3600,
+        },
         report_ttl = {
             type = "integer",
             description = "live time for server info in etcd",
             default = default_report_ttl,
-            minimum = 3,
+            minimum = 3600,
             maximum = 86400,
         }
     }
@@ -87,7 +94,9 @@ local function uninitialized_server_info()
         hostname         = core.utils.gethostname(),
         id               = core.id.get(),
         version          = core.version.VERSION,
+        up_time          = ngx_time() - boot_time,
         boot_time        = boot_time,
+        last_report_time = -1,
     }
 end
 
@@ -95,7 +104,6 @@ end
 local function get()
     local data, err = internal_status:get("server_info")
     if err ~= nil then
-        core.log.error("get error: ", err)
         return nil, err
     end
 
@@ -105,10 +113,10 @@ local function get()
 
     local server_info, err = core.json.decode(data)
     if not server_info then
-        core.log.error("failed to decode server_info: ", err)
         return nil, err
     end
 
+    server_info.up_time = ngx_time() - server_info.boot_time
     return server_info
 end
 
@@ -124,37 +132,11 @@ local function get_server_info()
 end
 
 
-local function set(key, value, ttl)
-    local res_new, err = core.etcd.set(key, value, ttl)
-    if not res_new then
-        core.log.error("failed to set server_info: ", err)
-        return nil, err
-    end
-
-    if not res_new.body.lease_id then
-        core.log.error("failed to get lease_id: ", err)
-        return nil, err
-    end
-
-    lease_id = res_new.body.lease_id
-
-    -- set or update lease_id
-    local ok, err = internal_status:set("lease_id", lease_id)
-    if not ok then
-        core.log.error("failed to set lease_id to shdict: ", err)
-        return nil, err
-    end
-
-    return true
-end
-
-
 local function report(premature, report_ttl)
     if premature then
         return
     end
 
-    -- get apisix node info
     local server_info, err = get()
     if not server_info then
         core.log.error("failed to get server_info: ", err)
@@ -176,47 +158,12 @@ local function report(premature, report_ttl)
         end
     end
 
-    -- get inside etcd data, if not exist, create it
+    server_info.last_report_time = ngx_time()
+
     local key = "/data_plane/server_info/" .. server_info.id
-    local res, err = core.etcd.get(key)
-    if not res or (res.status ~= 200 and res.status ~= 404) then
-        core.log.error("failed to get server_info from etcd: ", err)
-        return
-    end
-
-    if not res.body.node then
-        local ok, err = set(key, server_info, report_ttl)
-        if not ok then
-            core.log.error("failed to set server_info to etcd: ", err)
-            return
-        end
-
-        return
-    end
-
-    local ok = core.table.deep_eq(server_info, res.body.node.value)
-    -- not equal, update it
+    local ok, err = core.etcd.set(key, server_info, report_ttl)
     if not ok then
-        local ok, err = set(key, server_info, report_ttl)
-        if not ok then
-            core.log.error("failed to set server_info to etcd: ", err)
-            return
-        end
-
-        return
-    end
-
-    -- get lease_id from ngx dict
-    lease_id, err = internal_status:get("lease_id")
-    if not lease_id then
-        core.log.error("failed to get lease_id from shdict: ", err)
-        return
-    end
-
-    -- call keepalive
-    local res, err = core.etcd.keepalive(lease_id)
-    if not res then
-        core.log.error("send heartbeat failed: ", err)
+        core.log.error("failed to report server info to etcd: ", err)
         return
     end
 
@@ -256,6 +203,8 @@ end
 
 
 function _M.init()
+    core.log.info("server info: ", core.json.delay_encode(get()))
+
     if core.config ~= require("apisix.core.config_etcd") then
         -- we don't need to report server info if etcd is not in use.
         return
@@ -269,12 +218,12 @@ function _M.init()
     end
 
     local report_ttl = attr and attr.report_ttl or default_report_ttl
+    local report_interval = attr and attr.report_interval or default_report_interval
     local start_at = ngx_time()
 
     local fn = function()
         local now = ngx_time()
-        -- If ttl remaining time is less than half, then flush the ttl
-        if now - start_at >= (report_ttl / 2) then
+        if now - start_at >= report_interval then
             start_at = now
             report(nil, report_ttl)
         end
@@ -290,7 +239,8 @@ function _M.init()
 
     timers.register_timer("plugin#server-info", fn, true)
 
-    core.log.info("timer update the server info ttl, current ttl: ", report_ttl)
+    core.log.info("timer created to report server info, interval: ",
+                  report_interval)
 end
 
 

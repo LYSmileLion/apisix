@@ -113,21 +113,6 @@ passed
     location /t {
         content_by_lua_block {
             local t = require("lib.test_admin").test
-
-            local code, err = t('/apisix/admin/routes/jwt',
-                ngx.HTTP_PUT,
-                [[{
-                    "uri": "/apisix/plugin/jwt/sign",
-                    "plugins": { "public-api": {} }
-                }]]
-            )
-
-            if code >= 300 then
-                ngx.status = code
-                ngx.say(err)
-                return
-            end
-
             local code, err, sign = t('/apisix/plugin/jwt/sign?key=user-key',
                 ngx.HTTP_GET
             )
@@ -146,6 +131,8 @@ passed
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
 

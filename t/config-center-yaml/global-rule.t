@@ -117,11 +117,6 @@ global_rules:
 
 === TEST 4: common phase without matched route
 --- apisix_yaml
-routes:
-    -
-        uri: /apisix/prometheus/metrics
-        plugins:
-            public-api: {}
 global_rules:
     -
         id: 1

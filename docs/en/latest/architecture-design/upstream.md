@@ -21,21 +21,19 @@ title: Upstream
 #
 -->
 
-Upstream is a virtual host abstraction that performs load balancing on a given set of service nodes according to the configured rules.
-
-Although Upstream can be directly configured to the [Route](./route.md) or [Service](./route.md), using an Upstream object is recommended when there is duplication as shown below.
+Upstream is a virtual host abstraction that performs load balancing on a given set of service nodes according to configuration rules. Upstream address information can be directly configured to `Route` (or `Service`). When Upstream has duplicates, you need to use "reference" to avoid duplication.
 
 ![upstream-example](../../../assets/images/upstream-example.png)
 
-By creating an Upstream object and referencing it by `upstream_id` in the Route, you can ensure that there is only a single value of the object that needs to be maintained.
+As shown in the image above, by creating an Upstream object and referencing it by ID in `Route`, you can ensure that only the value of an object is maintained.
 
-An Upstream configuration can be directly bound to a Route or a Service, but the configuration in Route has a higher priority. This behavior is consistent with priority followed by the [Plugin](./plugin.md) object.
+Upstream configuration can be directly bound to the specified `Route` or it can be bound to `Service`, but the configuration in `Route` has a higher priority. The priority behavior here is very similar to `Plugin`.
 
 ### Configuration
 
-In addition to the equalization algorithm selections, Upstream also supports passive health check and retry for the upstream. You can learn more about this [here](../admin-api.md#upstream).
+In addition to the basic complex equalization algorithm selection, APISIX's Upstream also supports logic for upstream passive health check and retry, see [this link](../admin-api.md#upstream).
 
-To create an Upstream object, you can use the Admin API as shown below:
+Create an upstream object use case:
 
 ```shell
 curl http://127.0.0.1:9080/apisix/admin/upstreams/1 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
@@ -49,7 +47,7 @@ curl http://127.0.0.1:9080/apisix/admin/upstreams/1 -H 'X-API-KEY: edd1c9f034335
 }'
 ```
 
-After creating an Upstream object, it can be referenced by a specific Route or Service as shown below:
+After the upstream object is created, it can be referenced by specific `Route` or `Service`, for example:
 
 ```shell
 curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
@@ -59,7 +57,7 @@ curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f13
 }'
 ```
 
-For convenience, you can directly bind the upstream address to a Route or Service:
+For convenience, you can also directly bind the upstream address to a `Route` or `Service`, for example:
 
 ```shell
 curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
@@ -82,7 +80,7 @@ curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f13
 }'
 ```
 
-The example below shows how you can configure a health check:
+Here's an example of configuring a health check:
 
 ```shell
 curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
@@ -120,13 +118,13 @@ curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f13
 }'
 ```
 
-You can learn more about health checks [here](../health-check.md).
+More details can be found in [Health Checking Documents](../health-check.md).
 
-The examples below shows configurations which uses different `hash_on` types.
+Here are some examples of configurations using different `hash_on` types:
 
 #### Consumer
 
-Creating a Consumer object:
+Create a consumer object:
 
 ```shell
 curl http://127.0.0.1:9080/apisix/admin/consumers -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
@@ -140,7 +138,7 @@ curl http://127.0.0.1:9080/apisix/admin/consumers -H 'X-API-KEY: edd1c9f034335f1
 }'
 ```
 
-Creating a Route object and enabling the `key-auth` authentication Plugin:
+Create route object and enable `key-auth` plugin authentication:
 
 ```shell
 curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
@@ -160,7 +158,7 @@ curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f13
 }'
 ```
 
-To test the request, the `consumer_name` passed for authentication will be used as the hash value of the load balancing hash algorithm.
+Test request, the `consumer_name` after authentication is passed will be used as the hash value of the load balancing hash algorithm:
 
 ```shell
 curl http://127.0.0.1:9080/server_port -H "apikey: auth-jack"
@@ -168,7 +166,7 @@ curl http://127.0.0.1:9080/server_port -H "apikey: auth-jack"
 
 #### Cookie
 
-Creating a Route and an upstream object:
+Create route and upstream object, `hash_on` is `cookie`:
 
 ```shell
 curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
@@ -186,7 +184,7 @@ curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f13
 }'
 ```
 
-The client can then send a request with a cookie:
+The client requests with `Cookie`:
 
 ```shell
  curl http://127.0.0.1:9080/hash_on_cookie -H "Cookie: sid=3c183a30cffcda1408daf1c61d47b274"
@@ -194,7 +192,7 @@ The client can then send a request with a cookie:
 
 #### Header
 
-Creating a Route and an upstream object:
+Create route and upstream object, `hash_on` is `header`, `key` is `Content-Type`:
 
 ```shell
 curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -d '
@@ -212,7 +210,7 @@ curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f13
 }'
 ```
 
-The client can now send requests with a header. The example below shows using the header `Content-Type`:
+The client requests with header `Content-Type`:
 
 ```shell
  curl http://127.0.0.1:9080/hash_on_header -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -H "Content-Type: application/json"

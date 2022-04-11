@@ -66,8 +66,8 @@ function _M.check_schema(conf)
 end
 
 
-function _M.rewrite(conf, ctx)
-    local headers = core.request.headers(ctx)
+function _M.rewrite(conf)
+    local headers = ngx.req.get_headers()
 
     if conf.header_schema then
         local ok, err = core.schema.check(conf.header_schema, headers)
@@ -88,9 +88,7 @@ function _M.rewrite(conf, ctx)
         end
 
         if headers["content-type"] == "application/x-www-form-urlencoded" then
-            -- use 0 to avoid truncated result and keep the behavior as the
-            -- same as other platforms
-            req_body, err = ngx.decode_args(body, 0)
+            req_body, err = ngx.decode_args(body)
         else -- JSON as default
             req_body, err = core.json.decode(body)
         end

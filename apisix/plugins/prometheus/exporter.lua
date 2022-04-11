@@ -87,9 +87,6 @@ function _M.init()
             "Number of HTTP connections",
             {"state"})
 
-    metrics.requests = prometheus:gauge("http_requests_total",
-            "The total number of client requests since APISIX started")
-
     metrics.etcd_reachable = prometheus:gauge("etcd_reachable",
             "Config server etcd reachable from APISIX, 0 is unreachable")
 
@@ -202,12 +199,9 @@ local function nginx_status()
             break
         end
 
-        if name == "total" then
-            metrics.requests:set(val[0])
-        else
-            label_values[1] = name
-            metrics.connections:set(val[0], label_values)
-        end
+        label_values[1] = name
+        metrics.connections:set(val[0], label_values)
+
     end
 end
 

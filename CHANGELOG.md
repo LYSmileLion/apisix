@@ -26,7 +26,6 @@ title: Changelog
 - [2.12.1](#2121)
 - [2.12.0](#2120)
 - [2.11.0](#2110)
-- [2.10.4](#2104)
 - [2.10.3](#2103)
 - [2.10.2](#2102)
 - [2.10.1](#2101)
@@ -55,9 +54,10 @@ title: Changelog
 
 ## 2.12.1
 
-**This is an LTS maintenance release and you can see the CHANGELOG in `release/2.12` branch.**
+### Bugfix
 
-[https://github.com/apache/apisix/blob/release/2.12/CHANGELOG.md#2121](https://github.com/apache/apisix/blob/release/2.12/CHANGELOG.md#2121)
+- fix(batch-requests): real ip header should be overridden [#6251](https://github.com/apache/apisix/pull/6251)
+- fix(batch-requests): should be disabled by default [#6204](https://github.com/apache/apisix/pull/6204)
 
 ## 2.12.0
 
@@ -137,12 +137,6 @@ title: Changelog
 - :sunrise: feat(proxy-cache): support memory-based strategy [#5028](https://github.com/apache/apisix/pull/5028)
 - :sunrise: feat(ext-plugin): avoid sending conf request more times [#5183](https://github.com/apache/apisix/pull/5183)
 - :sunrise: feat: Add ldap-auth plugin [#3894](https://github.com/apache/apisix/pull/3894)
-
-## 2.10.4
-
-**This is an LTS maintenance release and you can see the CHANGELOG in `release/2.10` branch.**
-
-[https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2104](https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2104)
 
 ## 2.10.3
 
@@ -231,7 +225,7 @@ title: Changelog
 - fix(grpc-transcode): support converting nested message [#4859](https://github.com/apache/apisix/pull/4859)
 - fix(authz-keycloak): set permissions as empty table when lazy_load_path is false [#4845](https://github.com/apache/apisix/pull/4845)
 - fix(proxy-cache): keep cache_method same with nginx's proxy_cache_methods [#4814](https://github.com/apache/apisix/pull/4814)
-- fix(admin): inject updatetime when the request is PATCH with sub path [#4765](https://github.com/apache/apisix/pull/4765)
+- fix(admin): inject updatetime when the requst is PATCH with sub path [#4765](https://github.com/apache/apisix/pull/4765)
 - fix(admin): check username for updating consumer [#4756](https://github.com/apache/apisix/pull/4756)
 - fix(error-log-logger): avoid sending stale error log [#4690](https://github.com/apache/apisix/pull/4690)
 - fix(grpc-transcode): handle enum type [#4706](https://github.com/apache/apisix/pull/4706)

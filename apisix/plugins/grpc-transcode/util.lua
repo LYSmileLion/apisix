@@ -27,27 +27,17 @@ local type              = type
 local _M = {version = 0.1}
 
 
-function _M.find_method(proto, service, method)
-    local loaded = proto[proto_fake_file]
-    if type(loaded) ~= "table" then
-        core.log.error("compiled proto not found")
+function _M.find_method(protos, service, method)
+    local loaded = protos[proto_fake_file]
+    if not loaded or type(loaded) ~= "table" then
         return nil
     end
 
-    if type(loaded.index[service]) ~= "table" then
-        core.log.error("compiled proto service not found")
+    if not loaded.index[service] or type(loaded.index[service]) ~= "table" then
         return nil
     end
 
-    local res = loaded.index[service][method]
-    if not res then
-        core.log.error("compiled proto method not found")
-        return nil
-    end
-
-    -- restore pb state
-    pb.state(proto.pb_state)
-    return res
+    return loaded.index[service][method]
 end
 
 

@@ -168,6 +168,8 @@ Authorization: Bad_header Zm9vOmZvbwo=
 --- error_code: 401
 --- response_body
 {"message":"Invalid authorization header format"}
+--- no_error_log
+[error]
 
 
 
@@ -179,6 +181,8 @@ Authorization: Basic aca_a
 --- error_code: 401
 --- response_body
 {"message":"Failed to decode authentication header: aca_a"}
+--- no_error_log
+[error]
 
 
 
@@ -190,6 +194,8 @@ Authorization: Basic Zm9v
 --- error_code: 401
 --- response_body
 {"message":"Split authorization err: invalid decoded data: foo"}
+--- no_error_log
+[error]
 
 
 

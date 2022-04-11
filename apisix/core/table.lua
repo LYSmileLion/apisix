@@ -14,11 +14,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 --
-
---- Wrapped table module.
---
--- @module core.table
-
 local newproxy     = newproxy
 local getmetatable = getmetatable
 local setmetatable = setmetatable
@@ -39,7 +34,7 @@ local _M = {
     insert  = table.insert,
     concat  = table.concat,
     sort    = table.sort,
-    clone   = require("table.clone"),
+    clone   = require("table.clone"), --https://github.com/openresty/luajit2
     isarray = require("table.isarray"),
 }
 
@@ -80,16 +75,7 @@ function _M.try_read_attr(tab, ...)
     return tab
 end
 
----
---  Test if an element exists in an array.
---
--- @function core.table.array_find
--- @tparam table array The tested array.
--- @tparam string val The tested value.
--- @treturn number The index of tested value.
--- @usage
--- local arr = {"a", "b", "c"}
--- local idx = core.table.array_find(arr, "b") -- idx = 2
+
 function _M.array_find(array, val)
     for i, v in ipairs(array) do
         if v == val then

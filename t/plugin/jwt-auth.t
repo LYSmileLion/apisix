@@ -20,19 +20,6 @@ repeat_each(2);
 no_long_string();
 no_root_location();
 no_shuffle();
-
-add_block_preprocessor(sub {
-    my ($block) = @_;
-
-    if ((!defined $block->error_log) && (!defined $block->no_error_log)) {
-        $block->set_value("no_error_log", "[error]");
-    }
-
-    if (!defined $block->request) {
-        $block->set_value("request", "GET /t");
-    }
-});
-
 run_tests;
 
 __DATA__
@@ -53,8 +40,12 @@ __DATA__
             ngx.say(require("toolkit.json").encode(conf))
         }
     }
+--- request
+GET /t
 --- response_body_like eval
 qr/{"algorithm":"HS256","base64_secret":false,"exp":86400,"key":"123","secret":"[a-zA-Z0-9+\\\/]+={0,2}"}/
+--- no_error_log
+[error]
 
 
 
@@ -72,9 +63,13 @@ qr/{"algorithm":"HS256","base64_secret":false,"exp":86400,"key":"123","secret":"
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body
 property "key" validation failed: wrong type: expected string, got number
 done
+--- no_error_log
+[error]
 
 
 
@@ -114,8 +109,12 @@ done
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -146,38 +145,16 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 5: create public API route (jwt-auth sign)
---- config
-    location /t {
-        content_by_lua_block {
-            local t = require("lib.test_admin").test
-            local code, body = t('/apisix/admin/routes/2',
-                 ngx.HTTP_PUT,
-                 [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/apisix/plugin/jwt/sign"
-                 }]]
-                )
-
-            if code >= 300 then
-                ngx.status = code
-            end
-            ngx.say(body)
-        }
-    }
---- response_body
-passed
-
-
-
-=== TEST 6: sign / verify in argument
+=== TEST 5: sign / verify in argument
 --- config
     location /t {
         content_by_lua_block {
@@ -200,86 +177,104 @@ passed
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 7: test for unsupported method
+=== TEST 6: test for unsupported method
 --- request
 PATCH /apisix/plugin/jwt/sign?key=user-key
 --- error_code: 404
 
 
 
-=== TEST 8: verify, missing token
+=== TEST 7: verify, missing token
 --- request
 GET /hello
 --- error_code: 401
 --- response_body
 {"message":"Missing JWT token in request"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 9: verify: invalid JWT token
+=== TEST 8: verify: invalid JWT token
 --- request
 GET /hello?jwt=invalid-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTU2Mzg3MDUwMX0.pPNVvh-TQsdDzorRwa-uuiLYiEBODscp9wv0cwD6c68
 --- error_code: 401
 --- response_body
 {"message":"invalid header: invalid-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 10: verify: expired JWT token
+=== TEST 9: verify: expired JWT token
 --- request
 GET /hello?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTU2Mzg3MDUwMX0.pPNVvh-TQsdDzorRwa-uuiLYiEBODscp9wv0cwD6c68
 --- error_code: 401
 --- response_body
 {"message":"'exp' claim expired at Tue, 23 Jul 2019 08:28:21 GMT"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 11: verify (in header)
+=== TEST 10: verify (in header)
 --- request
 GET /hello
 --- more_headers
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTg3OTMxODU0MX0.fNtFJnNmJgzbiYmGB0Yjvm-l6A6M4jRV1l4mnVFSYjs
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 12: verify (in cookie)
+=== TEST 11: verify (in cookie)
 --- request
 GET /hello
 --- more_headers
 Cookie: jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTg3OTMxODU0MX0.fNtFJnNmJgzbiYmGB0Yjvm-l6A6M4jRV1l4mnVFSYjs
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 13: verify (in header without Bearer)
+=== TEST 12: verify (in header without Bearer)
 --- request
 GET /hello
 --- more_headers
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTg3OTMxODU0MX0.fNtFJnNmJgzbiYmGB0Yjvm-l6A6M4jRV1l4mnVFSYjs
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 14: verify (header with bearer)
+=== TEST 13: verify (header with bearer)
 --- request
 GET /hello
 --- more_headers
 Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTg3OTMxODU0MX0.fNtFJnNmJgzbiYmGB0Yjvm-l6A6M4jRV1l4mnVFSYjs
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 15: verify (invalid bearer token)
+=== TEST 14: verify (invalid bearer token)
 --- request
 GET /hello
 --- more_headers
@@ -287,10 +282,12 @@ Authorization: bearer invalid-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c
 --- error_code: 401
 --- response_body
 {"message":"invalid header: invalid-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 16: delete a exist consumer
+=== TEST 15: delete a exist consumer
 --- config
     location /t {
         content_by_lua_block {
@@ -335,15 +332,19 @@ Authorization: bearer invalid-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c
             ngx.say("code: ", code < 300, " body: ", body)
         }
     }
+--- request
+GET /t
 --- response_body
 code: true body: passed
 code: true body: passed
 code: true body: passed
 code: true body: passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 17: add consumer with username and plugins with base64 secret
+=== TEST 16: add consumer with username and plugins with base64 secret
 --- config
     location /t {
         content_by_lua_block {
@@ -380,12 +381,16 @@ code: true body: passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 18: enable jwt auth plugin with base64 secret
+=== TEST 17: enable jwt auth plugin with base64 secret
 --- config
     location /t {
         content_by_lua_block {
@@ -411,12 +416,16 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 19: sign / verify
+=== TEST 18: sign / verify
 --- config
     location /t {
         content_by_lua_block {
@@ -439,21 +448,27 @@ passed
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 20: verify: invalid JWT token
+=== TEST 19: verify: invalid JWT token
 --- request
 GET /hello?jwt=invalid-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTU2Mzg3MDUwMX0.pPNVvh-TQsdDzorRwa-uuiLYiEBODscp9wv0cwD6c68
 --- error_code: 401
 --- response_body
 {"message":"invalid header: invalid-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 21: verify: invalid signature
+=== TEST 20: verify: invalid signature
 --- request
 GET /hello
 --- more_headers
@@ -461,20 +476,24 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtle
 --- error_code: 401
 --- response_body
 {"message":"signature mismatch: fNtFJnNmJgzbiYmGB0Yjvm-l6A6M4jRV1l4mnVFSYjs"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 22: verify: happy path
+=== TEST 21: verify: happy path
 --- request
 GET /hello
 --- more_headers
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXkiOiJ1c2VyLWtleSIsImV4cCI6MTg3OTMxODU0MX0._kNmXeH1uYVAvApFTONk2Z3Gh-a4XfGrjmqd_ahoOI0
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 23: without key
+=== TEST 22: without key
 --- config
     location /t {
         content_by_lua_block {
@@ -489,12 +508,16 @@ hello world
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body
 property "key" is required
+--- no_error_log
+[error]
 
 
 
-=== TEST 24: get the schema by schema_type
+=== TEST 23: get the schema by schema_type
 --- config
     location /t {
         content_by_lua_block {
@@ -509,10 +532,14 @@ property "key" is required
             ngx.status = code
         }
     }
+--- request
+GET /t
+--- no_error_log
+[error]
 
 
 
-=== TEST 25: get the schema by error schema_type
+=== TEST 24: get the schema by error schema_type
 --- config
     location /t {
         content_by_lua_block {
@@ -527,10 +554,14 @@ property "key" is required
             ngx.status = code
         }
     }
+--- request
+GET /t
+--- no_error_log
+[error]
 
 
 
-=== TEST 26: get the schema by default schema_type
+=== TEST 25: get the schema by default schema_type
 --- config
     location /t {
         content_by_lua_block {
@@ -545,10 +576,14 @@ property "key" is required
             ngx.status = code
         }
     }
+--- request
+GET /t
+--- no_error_log
+[error]
 
 
 
-=== TEST 27: add consumer with username and plugins with public_key, private_key(private_key numbits = 512)
+=== TEST 26: add consumer with username and plugins with public_key, private_key(private_key numbits = 512)
 --- config
     location /t {
         content_by_lua_block {
@@ -587,12 +622,16 @@ property "key" is required
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 28: JWT sign and verify use RS256 algorithm(private_key numbits = 512)
+=== TEST 27: JWT sign and verify use RS256 algorithm(private_key numbits = 512)
 --- config
     location /t {
         content_by_lua_block {
@@ -619,12 +658,16 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 29: sign/verify use RS256 algorithm(private_key numbits = 512)
+=== TEST 28: sign/verify use RS256 algorithm(private_key numbits = 512)
 --- config
     location /t {
         content_by_lua_block {
@@ -647,12 +690,16 @@ passed
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 30: add consumer with username and plugins with public_key, private_key(private_key numbits = 1024)
+=== TEST 29: add consumer with username and plugins with public_key, private_key(private_key numbits = 1024)
 --- config
     location /t {
         content_by_lua_block {
@@ -694,12 +741,16 @@ hello world
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 31: JWT sign and verify use RS256 algorithm(private_key numbits = 1024)
+=== TEST 30: JWT sign and verify use RS256 algorithm(private_key numbits = 1024)
 --- config
     location /t {
         content_by_lua_block {
@@ -726,12 +777,16 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 32: sign/verify use RS256 algorithm(private_key numbits = 1024)
+=== TEST 31: sign/verify use RS256 algorithm(private_key numbits = 1024)
 --- config
     location /t {
         content_by_lua_block {
@@ -754,12 +809,16 @@ passed
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 33: sign/verify use RS256 algorithm(private_key numbits = 1024,with extra payload)
+=== TEST 32: sign/verify use RS256 algorithm(private_key numbits = 1024,with extra payload)
 --- config
     location /t {
         content_by_lua_block {
@@ -782,12 +841,16 @@ hello world
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 34: add consumer with username and plugins with public_key, private_key(private_key numbits = 2048)
+=== TEST 33: add consumer with username and plugins with public_key, private_key(private_key numbits = 2048)
 --- config
     location /t {
         content_by_lua_block {
@@ -829,12 +892,16 @@ hello world
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 35: JWT sign and verify use RS256 algorithm(private_key numbits = 2048)
+=== TEST 34: JWT sign and verify use RS256 algorithm(private_key numbits = 2048)
 --- config
     location /t {
         content_by_lua_block {
@@ -861,12 +928,16 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 36: sign/verify use RS256 algorithm(private_key numbits = 2048)
+=== TEST 35: sign/verify use RS256 algorithm(private_key numbits = 2048)
 --- config
     location /t {
         content_by_lua_block {
@@ -889,12 +960,16 @@ passed
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 37: sign/verify use RS256 algorithm(private_key numbits = 2048,with extra payload)
+=== TEST 36: sign/verify use RS256 algorithm(private_key numbits = 2048,with extra payload)
 --- config
     location /t {
         content_by_lua_block {
@@ -917,12 +992,16 @@ hello world
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 38: JWT sign with the public key when using the RS256 algorithm
+=== TEST 37: JWT sign with the public key when using the RS256 algorithm
 --- config
     location /t {
         content_by_lua_block {
@@ -961,12 +1040,16 @@ hello world
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 39: JWT sign and verify RS256
+=== TEST 38: JWT sign and verify RS256
 --- config
     location /t {
         content_by_lua_block {
@@ -993,12 +1076,16 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 40: sign failed
+=== TEST 39: sign failed
 --- request
 GET /apisix/plugin/jwt/sign?key=user-key-rs256
 --- error_code: 500
@@ -1007,7 +1094,7 @@ qr/failed to sign jwt/
 
 
 
-=== TEST 41: sanity(algorithm = HS512)
+=== TEST 40: sanity(algorithm = HS512)
 --- config
     location /t {
         content_by_lua_block {
@@ -1023,12 +1110,16 @@ qr/failed to sign jwt/
             ngx.say(require("toolkit.json").encode(conf))
         }
     }
+--- request
+GET /t
 --- response_body_like eval
 qr/{"algorithm":"HS512","base64_secret":false,"exp":86400,"key":"123","secret":"[a-zA-Z0-9+\\\/]+={0,2}"}/
+--- no_error_log
+[error]
 
 
 
-=== TEST 42: add consumer with username and plugins use HS512 algorithm
+=== TEST 41: add consumer with username and plugins use HS512 algorithm
 --- config
     location /t {
         content_by_lua_block {
@@ -1066,12 +1157,16 @@ qr/{"algorithm":"HS512","base64_secret":false,"exp":86400,"key":"123","secret":"
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 43: JWT sign and verify use HS512 algorithm
+=== TEST 42: JWT sign and verify use HS512 algorithm
 --- config
     location /t {
         content_by_lua_block {
@@ -1098,12 +1193,16 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 44: sign / verify (algorithm = HS512)
+=== TEST 43: sign / verify (algorithm = HS512)
 --- config
     location /t {
         content_by_lua_block {
@@ -1126,12 +1225,16 @@ passed
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 45: sign / verify (algorithm = HS512,with extra payload)
+=== TEST 44: sign / verify (algorithm = HS512,with extra payload)
 --- config
     location /t {
         content_by_lua_block {
@@ -1154,12 +1257,18 @@ hello world
             ngx.print(res)
         }
     }
+--- request
+GET /t
 --- response_body
 hello world
+--- no_error_log
+[error]
 
 
 
-=== TEST 46: test for unsupported algorithm
+=== TEST 45: test for unsupported algorithm
+--- request
+PATCH /apisix/plugin/jwt/sign?key=user-key
 --- config
     location /t {
         content_by_lua_block {
@@ -1175,12 +1284,14 @@ hello world
             ngx.say(require("toolkit.json").encode(conf))
         }
     }
+--- request
+GET /t
 --- response_body_like eval
 qr/property "algorithm" validation failed/
 
 
 
-=== TEST 47: wrong format of secret
+=== TEST 46: wrong format of secret
 --- config
     location /t {
         content_by_lua_block {
@@ -1200,10 +1311,14 @@ qr/property "algorithm" validation failed/
     }
 --- response_body
 base64_secret required but the secret is not in base64 format
+--- no_error_log
+[error]
+--- request
+GET /t
 
 
 
-=== TEST 48: when the exp value is not set, make sure the default value(86400) works
+=== TEST 47: when the exp value is not set, make sure the default value(86400) works
 --- config
     location /t {
         content_by_lua_block {
@@ -1239,12 +1354,16 @@ base64_secret required but the secret is not in base64 format
             ngx.say(require("toolkit.json").encode(res_data))
         }
     }
+--- request
+GET /t
 --- response_body_like eval
 qr/"exp":86400/
+--- no_error_log
+[error]
 
 
 
-=== TEST 49: when the exp value is not set, sign jwt use the default value(86400)
+=== TEST 48: when the exp value is not set, sign jwt use the default value(86400)
 --- config
     location /t {
         content_by_lua_block {
@@ -1260,12 +1379,16 @@ qr/"exp":86400/
             ngx.say(use_default_exp)
         }
     }
+--- request
+GET /t
 --- response_body
 true
+--- no_error_log
+[error]
 
 
 
-=== TEST 50: RS256 without public key
+=== TEST 49: RS256 without public key
 --- config
     location /t {
         content_by_lua_block {
@@ -1286,13 +1409,17 @@ true
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- error_code: 400
 --- response_body_like eval
 qr/failed to validate dependent schema for \\"algorithm\\"/
+--- no_error_log
+[error]
 
 
 
-=== TEST 51: RS256 without private key
+=== TEST 50: RS256 without private key
 --- config
     location /t {
         content_by_lua_block {
@@ -1314,6 +1441,10 @@ qr/failed to validate dependent schema for \\"algorithm\\"/
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- error_code: 400
 --- response_body_like eval
 qr/failed to validate dependent schema for \\"algorithm\\"/
+--- no_error_log
+[error]

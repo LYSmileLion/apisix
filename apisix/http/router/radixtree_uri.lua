@@ -29,12 +29,12 @@ local _M = {version = 0.2}
     local uri_router
     local match_opts = {}
 function _M.match(api_ctx)
-    local user_routes = _M.user_routes
+    local user_routes = _M.user_routes --attach_http_router_common_methods中init函数执行时，会将/apisix/routes obj下的内容attach到该对象上
     local _, service_version = get_services()
     if not cached_router_version or cached_router_version ~= user_routes.conf_version
         or not cached_service_version or cached_service_version ~= service_version
     then
-        uri_router = base_router.create_radixtree_uri_router(user_routes.values,
+        uri_router = base_router.create_radixtree_uri_router(user_routes.values, --/routes 下面的路由数组
                                                              uri_routes, false)
         cached_router_version = user_routes.conf_version
         cached_service_version = service_version

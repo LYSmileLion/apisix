@@ -21,15 +21,6 @@ repeat_each(1);
 no_long_string();
 no_root_location();
 no_shuffle();
-
-add_block_preprocessor(sub {
-    my ($block) = @_;
-
-    if (!defined $block->request) {
-        $block->set_value("request", "GET /t");
-    }
-});
-
 run_tests;
 
 __DATA__
@@ -39,7 +30,9 @@ __DATA__
     location /t {
         content_by_lua_block {
             local plugin = require("apisix.plugins.wolf-rbac")
-            local conf = {}
+            local conf = {
+
+            }
 
             local ok, err = plugin.check_schema(conf)
             if not ok then
@@ -49,6 +42,8 @@ __DATA__
             ngx.say(require("toolkit.json").encode(conf))
         }
     }
+--- request
+GET /t
 --- response_body_like eval
 qr/\{"appid":"unset","header_prefix":"X-","server":"http:\/\/127\.0\.0\.1:12180"\}/
 --- no_error_log
@@ -69,6 +64,8 @@ qr/\{"appid":"unset","header_prefix":"X-","server":"http:\/\/127\.0\.0\.1:12180"
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body
 property "appid" validation failed: wrong type: expected string, got number
 done
@@ -77,54 +74,7 @@ done
 
 
 
-=== TEST 3: setup public API route
---- config
-    location /t {
-        content_by_lua_block {
-            local data = {
-                {
-                    url = "/apisix/admin/routes/wolf-login",
-                    data = [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/apisix/plugin/wolf-rbac/login"
-                    }]]
-                },
-                {
-                    url = "/apisix/admin/routes/wolf-userinfo",
-                    data = [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/apisix/plugin/wolf-rbac/user_info"
-                    }]]
-                },
-                {
-                    url = "/apisix/admin/routes/wolf-change-pwd",
-                    data = [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/apisix/plugin/wolf-rbac/change_pwd"
-                    }]]
-                },
-            }
-
-            local t = require("lib.test_admin").test
-
-            for _, data in ipairs(data) do
-                local code, body = t(data.url, ngx.HTTP_PUT, data.data)
-                ngx.say(code..body)
-            end
-        }
-    }
---- response_body eval
-"201passed\n" x 3
-
-
-
-=== TEST 4: add consumer with username and plugins
+=== TEST 3: add consumer with username and plugins
 --- config
     location /t {
         content_by_lua_block {
@@ -160,6 +110,8 @@ done
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 --- no_error_log
@@ -167,7 +119,7 @@ passed
 
 
 
-=== TEST 5: enable wolf rbac plugin using admin api
+=== TEST 4: enable wolf rbac plugin using admin api
 --- config
     location /t {
         content_by_lua_block {
@@ -194,6 +146,8 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
 --- no_error_log
@@ -201,7 +155,7 @@ passed
 
 
 
-=== TEST 6: login failed, appid is missing
+=== TEST 5: login failed, appid is missing
 --- request
 POST /apisix/plugin/wolf-rbac/login
 username=admin&password=123456
@@ -215,7 +169,7 @@ qr/appid is missing/
 
 
 
-=== TEST 7: login failed, appid not found
+=== TEST 6: login failed, appid not found
 --- request
 POST /apisix/plugin/wolf-rbac/login
 appid=not-found&username=admin&password=123456
@@ -229,7 +183,7 @@ qr/appid \[not-found\] not found/
 
 
 
-=== TEST 8: login failed, username missing
+=== TEST 7: login failed, username missing
 --- request
 POST /apisix/plugin/wolf-rbac/login
 appid=wolf-rbac-app&password=123456
@@ -241,7 +195,7 @@ qr/ERR_USERNAME_MISSING/
 
 
 
-=== TEST 9: login failed, password missing
+=== TEST 8: login failed, password missing
 --- request
 POST /apisix/plugin/wolf-rbac/login
 appid=wolf-rbac-app&username=admin
@@ -253,7 +207,7 @@ qr/ERR_PASSWORD_MISSING/
 
 
 
-=== TEST 10: login failed, username not found
+=== TEST 9: login failed, username not found
 --- request
 POST /apisix/plugin/wolf-rbac/login
 appid=wolf-rbac-app&username=not-found&password=123456
@@ -265,7 +219,7 @@ qr/ERR_USER_NOT_FOUND/
 
 
 
-=== TEST 11: login failed, wrong password
+=== TEST 10: login failed, wrong password
 --- request
 POST /apisix/plugin/wolf-rbac/login
 appid=wolf-rbac-app&username=admin&password=wrong-password
@@ -277,7 +231,7 @@ qr/ERR_PASSWORD_ERROR/
 
 
 
-=== TEST 12: login successfully
+=== TEST 11: login successfully
 --- config
     location /t {
         content_by_lua_block {
@@ -295,12 +249,14 @@ qr/ERR_PASSWORD_ERROR/
             ngx.status = code
         }
     }
+--- request
+GET /t
 --- no_error_log
 [error]
 
 
 
-=== TEST 13: verify, missing token
+=== TEST 12: verify, missing token
 --- request
 GET /hello
 --- error_code: 401
@@ -311,7 +267,7 @@ GET /hello
 
 
 
-=== TEST 14: verify: invalid rbac token
+=== TEST 13: verify: invalid rbac token
 --- request
 GET /hello
 --- error_code: 401
@@ -324,7 +280,7 @@ x-rbac-token: invalid-rbac-token
 
 
 
-=== TEST 15: verify: invalid appid in rbac token
+=== TEST 14: verify: invalid appid in rbac token
 --- request
 GET /hello
 --- error_code: 401
@@ -335,7 +291,7 @@ x-rbac-token: V1#invalid-appid#rbac-token
 
 
 
-=== TEST 16: verify: failed
+=== TEST 15: verify: failed
 --- request
 GET /hello1
 --- error_code: 401
@@ -346,7 +302,7 @@ x-rbac-token: V1#wolf-rbac-app#wolf-rbac-token
 
 
 
-=== TEST 17: verify (in argument)
+=== TEST 16: verify (in argument)
 --- request
 GET /hello?rbac_token=V1%23wolf-rbac-app%23wolf-rbac-token
 --- response_headers
@@ -360,7 +316,7 @@ hello world
 
 
 
-=== TEST 18: verify (in header Authorization)
+=== TEST 17: verify (in header Authorization)
 --- request
 GET /hello
 --- more_headers
@@ -376,7 +332,7 @@ hello world
 
 
 
-=== TEST 19: verify (in header x-rbac-token)
+=== TEST 18: verify (in header x-rbac-token)
 --- request
 GET /hello
 --- more_headers
@@ -392,7 +348,7 @@ hello world
 
 
 
-=== TEST 20: verify (in cookie)
+=== TEST 19: verify (in cookie)
 --- request
 GET /hello
 --- more_headers
@@ -408,7 +364,7 @@ hello world
 
 
 
-=== TEST 21: get userinfo failed, missing token
+=== TEST 20: get userinfo failed, missing token
 --- request
 GET /apisix/plugin/wolf-rbac/user_info
 --- error_code: 401
@@ -419,7 +375,7 @@ GET /apisix/plugin/wolf-rbac/user_info
 
 
 
-=== TEST 22: get userinfo failed, invalid rbac token
+=== TEST 21: get userinfo failed, invalid rbac token
 --- request
 GET /apisix/plugin/wolf-rbac/user_info
 --- error_code: 401
@@ -432,7 +388,7 @@ x-rbac-token: invalid-rbac-token
 
 
 
-=== TEST 23: get userinfo
+=== TEST 22: get userinfo
 --- config
     location /t {
         content_by_lua_block {
@@ -448,12 +404,14 @@ x-rbac-token: invalid-rbac-token
             ngx.status = code
         }
     }
+--- request
+GET /t
 --- no_error_log
 [error]
 
 
 
-=== TEST 24: change password failed, old password incorrect
+=== TEST 23: change password failed, old password incorrect
 --- request
 PUT /apisix/plugin/wolf-rbac/change_pwd
 {"oldPassword": "error", "newPassword": "abcdef"}
@@ -466,7 +424,7 @@ qr/ERR_OLD_PASSWORD_INCORRECT/
 
 
 
-=== TEST 25: change password
+=== TEST 24: change password
 --- request
 PUT /apisix/plugin/wolf-rbac/change_pwd
 {"oldPassword":"123456", "newPassword": "abcdef"}
@@ -479,7 +437,7 @@ qr/success to change password/
 
 
 
-=== TEST 26: custom headers in request headers
+=== TEST 25: custom headers in request headers
 --- request
 GET /wolf/rbac/custom/headers?rbac_token=V1%23wolf-rbac-app%23wolf-rbac-token
 --- response_headers

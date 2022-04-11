@@ -209,7 +209,6 @@ apisix:
   node_listen: 1984
   admin_key: null
 plugins:
-  - public-api
   - prometheus
 plugin_attr:
   prometheus:
@@ -220,19 +219,6 @@ location /t {
         local core = require "apisix.core"
         ngx.sleep(0.1)
         local t = require("lib.test_admin").test
-
-        -- setup public API route
-        local code, body = t('/apisix/admin/routes/1',
-                 ngx.HTTP_PUT,
-                 [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/apisix/metrics"
-                 }]]
-                )
-        ngx.say(code)
-
         local code, _, org_body = t('/apisix/metrics',
                                     ngx.HTTP_GET)
         ngx.say(code)
@@ -242,7 +228,6 @@ apisix:
   node_listen: 1984
   admin_key: null
 plugins:
-  - public-api
   - prometheus
 plugin_attr:
   prometheus:
@@ -264,7 +249,6 @@ plugin_attr:
 --- request
 GET /t
 --- response_body
-201
 404
 done
 200

@@ -21,6 +21,14 @@ title: limit-conn
 #
 -->
 
+## Summary
+
+- [Name](#name)
+- [Attributes](#attributes)
+- [How To Enable](#how-to-enable)
+- [Test Plugin](#test-plugin)
+- [Disable Plugin](#disable-plugin)
+
 ## Name
 
 Limiting request concurrency plugin.

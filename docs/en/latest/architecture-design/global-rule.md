@@ -1,5 +1,5 @@
 ---
-title: Global Rule
+title: Global rule
 ---
 
 <!--
@@ -21,11 +21,8 @@ title: Global Rule
 #
 -->
 
-A [Plugin](./plugin.md) configuration can be bound directly to a [Route](./route.md), a [Service](./service.md) or a [Consumer](./consumer.md). But what if we want a Plugin to work on all requests?
-
-This is where we register a global Plugin with Global Rule.
-
-The example below shows how you can use the `limit-count` Plugin on all requests:
+The [Plugin](plugin.md) configuration can be bound directly to a [Route](route.md), or to a [Service](service.md) or [Consumer](consumer.md). What if we want a [Plugin](plugin.md) to work on all requests, how to do it?
+We can register a global [Plugin](plugin.md) with `GlobalRule`:
 
 ```shell
 curl -X PUT \
@@ -45,7 +42,9 @@ curl -X PUT \
     }'
 ```
 
-You can also list all the Global rules by making this request with the Admin API:
+Now, the `limit-count` plugin will work on all requests
+
+we can list all `GlobalRule` via admin api as below:
 
 ```shell
 curl https://{apisix_listen_address}/apisix/admin/global_rules

@@ -30,19 +30,6 @@ repeat_each(1);
 no_long_string();
 no_shuffle();
 no_root_location();
-
-add_block_preprocessor(sub {
-    my ($block) = @_;
-
-    if (!$block->request) {
-        $block->set_value("request", "GET /t");
-    }
-
-    if (!$block->error_log && !$block->no_error_log) {
-        $block->set_value("no_error_log", "[error]\n[alert]");
-    }
-});
-
 run_tests;
 
 __DATA__
@@ -60,8 +47,12 @@ __DATA__
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body
 done
+--- no_error_log
+[error]
 
 
 
@@ -78,8 +69,12 @@ done
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body
 done
+--- no_error_log
+[error]
 
 
 
@@ -116,8 +111,12 @@ done
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -126,6 +125,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -134,6 +135,8 @@ passed
 ["GET /hello1", "GET /hello", "GET /hello2", "GET /hello", "GET /hello"]
 --- error_code eval
 [404, 503, 404, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -170,8 +173,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -180,6 +187,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 200, 503]
+--- no_error_log
+[error]
 
 
 
@@ -213,9 +222,13 @@ passed
             ngx.print(body)
         }
     }
+--- request
+GET /t
 --- error_code: 400
 --- response_body
 {"error_msg":"failed to check the configuration of plugin limit-count err: property \"count\" is required"}
+--- no_error_log
+[error]
 
 
 
@@ -251,9 +264,13 @@ passed
             ngx.print(body)
         }
     }
+--- request
+GET /t
 --- error_code: 400
 --- response_body
 {"error_msg":"failed to check the configuration of plugin limit-count err: property \"count\" validation failed: expected -100 to be greater than 0"}
+--- no_error_log
+[error]
 
 
 
@@ -289,9 +306,13 @@ passed
             ngx.print(body)
         }
     }
+--- request
+GET /t
 --- error_code: 400
 --- response_body
 {"error_msg":"failed to check the configuration of plugin limit-count err: property \"count\" validation failed: expected -100 to be greater than 0"}
+--- no_error_log
+[error]
 
 
 
@@ -324,9 +345,13 @@ passed
             ngx.print(body)
         }
     }
+--- request
+GET /t
 --- error_code: 400
 --- response_body
 {"error_msg":"failed to check the configuration of plugin limit-count err: property \"count\" is required"}
+--- no_error_log
+[error]
 
 
 
@@ -361,9 +386,13 @@ passed
             ngx.print(body)
         }
     }
+--- request
+GET /t
 --- error_code: 400
 --- response_body
 {"error_msg":"failed to check the configuration of plugin limit-count err: property \"count\" validation failed: expected -100 to be greater than 0"}
+--- no_error_log
+[error]
 
 
 
@@ -398,9 +427,13 @@ passed
             ngx.print(body)
         }
     }
+--- request
+GET /t
 --- error_code: 400
 --- response_body
 {"error_msg":"failed to check the configuration of plugin limit-count err: property \"count\" validation failed: expected -100 to be greater than 0"}
+--- no_error_log
+[error]
 
 
 
@@ -415,7 +448,7 @@ passed
                         "plugins": {
                             "limit-count": {
                                 "count": 2,
-                                "time_window": 61,
+                                "time_window": 60,
                                 "rejected_code": 503,
                                 "key": "remote_addr"
                             }
@@ -436,8 +469,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -446,6 +483,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -475,8 +514,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -485,6 +528,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 200, 200]
+--- no_error_log
+[error]
 
 
 
@@ -521,8 +566,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -531,6 +580,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -546,7 +597,7 @@ passed
                         "plugins": {
                             "limit-count": {
                                 "count": 2,
-                                "time_window": 80,
+                                "time_window": 60,
                                 "key": "remote_addr"
                             }
                         },
@@ -577,8 +628,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -594,7 +649,7 @@ passed
                         "plugins": {
                             "limit-count": {
                                 "count": 1,
-                                "time_window": 80,
+                                "time_window": 60,
                                 "key": "remote_addr"
                             }
                         },
@@ -629,6 +684,8 @@ passed
 ["GET /hello", "GET /hello","GET /hello","GET /t1", "GET /hello","GET /hello"]
 --- error_code eval
 [200, 200, 503, 200, 200, 503]
+--- no_error_log
+[error]
 
 
 
@@ -644,7 +701,7 @@ passed
                         "plugins": {
                             "limit-count": {
                                 "count": 2,
-                                "time_window": 82,
+                                "time_window": 60,
                                 "key": "remote_addr"
                             }
                         },
@@ -685,7 +742,7 @@ passed
                         "plugins": {
                             "limit-count": {
                                 "count": 1,
-                                "time_window": 82,
+                                "time_window": 60,
                                 "key": "remote_addr"
                             }
                         },
@@ -720,6 +777,8 @@ passed
 ["GET /t1", "GET /hello", "GET /hello", "GET /t", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 503, 200, 200, 200, 503]
+--- no_error_log
+[error]
 
 
 
@@ -735,7 +794,7 @@ passed
                         "plugins": {
                             "limit-count": {
                                 "count": 2,
-                                "time_window": 83,
+                                "time_window": 60,
                                 "key": "remote_addr"
                             }
                         },
@@ -769,7 +828,9 @@ passed
 --- pipelined_requests eval
 ["GET /t", "GET /hello", "GET /hello", "GET /hello", "GET /t", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
-[200, 200, 200, 503, 200, 503, 503, 503]
+[200, 200, 200, 503, 200, 200, 200, 503]
+--- no_error_log
+[error]
 
 
 
@@ -795,8 +856,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -833,8 +898,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -845,6 +914,8 @@ apikey: auth-jack
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -879,8 +950,12 @@ apikey: auth-jack
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -910,8 +985,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -920,6 +999,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -939,8 +1020,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -956,7 +1041,7 @@ passed
                         "plugins": {
                             "limit-count": {
                                 "count": 2,
-                                "time_window": 91,
+                                "time_window": 60,
                                 "rejected_code": 503,
                                 "key": "service_id"
                             }
@@ -978,8 +1063,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -988,6 +1077,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -1004,8 +1095,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -1022,8 +1117,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -1039,7 +1138,7 @@ passed
                         "plugins": {
                             "limit-count": {
                                 "count": 2,
-                                "time_window": 95,
+                                "time_window": 60,
                                 "rejected_code": 503
                             }
                         },
@@ -1059,8 +1158,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -1069,6 +1172,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -1117,8 +1222,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -1145,6 +1254,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -1161,7 +1272,7 @@ passed
                     "plugins": {
                         "limit-count": {
                             "count": 3,
-                            "time_window": 99,
+                            "time_window": 60,
                             "rejected_code": 503
                         }
                     },
@@ -1181,8 +1292,12 @@ passed
             ngx.say(body)
         }
     }
+--- request
+GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
@@ -1209,6 +1324,8 @@ passed
 ["GET /hello", "GET /hello", "GET /hello", "GET /hello", "GET /hello"]
 --- error_code eval
 [200, 200, 200, 503, 503]
+--- no_error_log
+[error]
 
 
 
@@ -1225,8 +1342,12 @@ passed
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body eval
 qr/property \"count\" validation failed: expected 0 to be greater than 0/
+--- no_error_log
+[error]
 
 
 
@@ -1243,5 +1364,9 @@ qr/property \"count\" validation failed: expected 0 to be greater than 0/
             ngx.say("done")
         }
     }
+--- request
+GET /t
 --- response_body eval
 qr/property \"time_window\" validation failed: expected 0 to be greater than 0/
+--- no_error_log
+[error]

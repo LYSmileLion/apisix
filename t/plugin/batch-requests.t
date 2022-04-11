@@ -26,50 +26,17 @@ add_block_preprocessor(sub {
 
     my $extra_yaml_config = <<_EOC_;
 plugins:
-    - public-api
     - batch-requests
 _EOC_
 
     $block->set_value("extra_yaml_config", $extra_yaml_config);
-
-    if ((!defined $block->error_log) && (!defined $block->no_error_log)) {
-        $block->set_value("no_error_log", "[error]");
-    }
 });
 
 run_tests;
 
 __DATA__
 
-=== TEST 1: pre-create public API route
---- config
-    location /t {
-        content_by_lua_block {
-            local t = require("lib.test_admin").test
-            local code, body = t('/apisix/admin/routes/1',
-                 ngx.HTTP_PUT,
-                 [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/apisix/batch-requests"
-                 }]]
-                )
-
-            if code >= 300 then
-                ngx.status = code
-            end
-            ngx.say(body)
-        }
-    }
---- request
-GET /t
---- response_body
-passed
-
-
-
-=== TEST 2: sanity
+=== TEST 1: sanity
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -194,10 +161,12 @@ passed
 GET /aggregate
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 3: missing pipeline
+=== TEST 2: missing pipeline
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -231,10 +200,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"bad request body: object matches none of the required: [\"pipeline\"]"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 4: timeout is not number
+=== TEST 3: timeout is not number
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -269,10 +240,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"bad request body: property \"timeout\" validation failed: wrong type: expected integer, got string"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 5: different response time
+=== TEST 4: different response time
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -336,10 +309,12 @@ GET /aggregate
 GET /aggregate
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 6: last request timeout
+=== TEST 5: last request timeout
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -407,7 +382,7 @@ timeout
 
 
 
-=== TEST 7: first request timeout
+=== TEST 6: first request timeout
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -469,7 +444,7 @@ timeout
 
 
 
-=== TEST 8: no body in request
+=== TEST 7: no body in request
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -490,10 +465,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"no request body, you should give at least one pipeline setting"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 9: invalid body
+=== TEST 8: invalid body
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -513,10 +490,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"invalid request body: invalid json string, err: Expected value but found invalid token at character 1"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 10: invalid pipeline's path
+=== TEST 9: invalid pipeline's path
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -541,10 +520,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"bad request body: property \"pipeline\" validation failed: failed to validate item 1: property \"path\" validation failed: string too short, expected at least 1, got 0"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 11: invalid pipeline's method
+=== TEST 10: invalid pipeline's method
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -569,10 +550,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"bad request body: property \"pipeline\" validation failed: failed to validate item 1: property \"method\" validation failed: matches none of the enum values"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 12: invalid pipeline's version
+=== TEST 11: invalid pipeline's version
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -597,10 +580,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"bad request body: property \"pipeline\" validation failed: failed to validate item 1: property \"version\" validation failed: matches none of the enum values"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 13: invalid pipeline's ssl
+=== TEST 12: invalid pipeline's ssl
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -625,10 +610,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"bad request body: property \"pipeline\" validation failed: failed to validate item 1: property \"ssl_verify\" validation failed: wrong type: expected boolean, got number"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 14: invalid pipeline's number
+=== TEST 13: invalid pipeline's number
 --- config
     location = /aggregate {
         content_by_lua_block {
@@ -649,10 +636,12 @@ GET /aggregate
 --- error_code: 400
 --- response_body
 {"error_msg":"bad request body: property \"pipeline\" validation failed: expect array to have at least 1 items"}
+--- no_error_log
+[error]
 
 
 
-=== TEST 15: when client body has been wrote to temp file
+=== TEST 14: when client body has been wrote to temp file
 --- config
     client_body_in_file_only on;
     location = /aggregate {
@@ -714,10 +703,12 @@ GET /aggregate
 GET /aggregate
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 16: copy all header to every request except content
+=== TEST 15: copy all header to every request except content
 --- config
     client_body_in_file_only on;
     location = /aggregate {
@@ -800,10 +791,12 @@ passed
 GET /aggregate
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 17: exceed default body limit size (check header)
+=== TEST 16: exceed default body limit size (check header)
 --- config
     location = /t {
         content_by_lua_block {
@@ -824,10 +817,12 @@ GET /t
 --- error_code: 413
 --- response_body eval
 qr/\{"error_msg":"request size 4194304 is greater than the maximum size 1048576 allowed"\}/
+--- no_error_log
+[error]
 
 
 
-=== TEST 18: exceed default body limit size (check file size)
+=== TEST 17: exceed default body limit size (check file size)
 --- request eval
 "POST /apisix/batch-requests
 " . ("1000\r
@@ -840,12 +835,14 @@ Transfer-Encoding: chunked
 --- error_code: 413
 --- response_body eval
 qr/\{"error_msg":"request size 1052672 is greater than the maximum size 1048576 allowed"\}/
+--- no_error_log
+[error]
 --- error_log
 attempt to read body from file
 
 
 
-=== TEST 19: add plugin metadata
+=== TEST 18: add plugin metadata
 --- config
     location /t {
         content_by_lua_block {
@@ -867,10 +864,12 @@ attempt to read body from file
 GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 20: exceed body limit size
+=== TEST 19: exceed body limit size
 --- config
     location = /t {
         content_by_lua_block {
@@ -891,10 +890,12 @@ GET /t
 --- error_code: 413
 --- response_body eval
 qr/\{"error_msg":"request size 4096 is greater than the maximum size 2048 allowed"\}/
+--- no_error_log
+[error]
 
 
 
-=== TEST 21: exceed body limit size (expected)
+=== TEST 20: exceed body limit size (expected)
 --- config
     location = /t {
         content_by_lua_block {
@@ -917,10 +918,12 @@ GET /t
 --- error_code: 413
 --- response_body eval
 qr/\{"error_msg":"request size 4096 is greater than the maximum size 2048 allowed"\}/
+--- no_error_log
+[error]
 
 
 
-=== TEST 22: don't exceed body limit size
+=== TEST 21: don't exceed body limit size
 --- config
     location = /t {
         content_by_lua_block {
@@ -973,10 +976,12 @@ qr/\{"error_msg":"request size 4096 is greater than the maximum size 2048 allowe
 GET /t
 --- response_body
 passed
+--- no_error_log
+[error]
 
 
 
-=== TEST 23: invalid body size
+=== TEST 22: invalid body size
 --- config
     location /t {
         content_by_lua_block {
@@ -999,10 +1004,12 @@ GET /t
 --- error_code: 400
 --- response_body eval
 qr/\{"error_msg":"invalid configuration: property \\"max_body_size\\" validation failed: expected 0 to be greater than 0"\}/
+--- no_error_log
+[error]
 
 
 
-=== TEST 24: keep environment clean
+=== TEST 23: keep environment clean
 --- config
     location /t {
         content_by_lua_block {
@@ -1023,3 +1030,5 @@ qr/\{"error_msg":"invalid configuration: property \\"max_body_size\\" validation
 GET /t
 --- response_body
 passed
+--- no_error_log
+[error]

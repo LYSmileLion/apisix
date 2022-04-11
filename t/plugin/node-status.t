@@ -21,19 +21,10 @@ add_block_preprocessor(sub {
 
     my $extra_yaml_config = <<_EOC_;
 plugins:
-    - public-api
     - node-status
 _EOC_
 
     $block->set_value("extra_yaml_config", $extra_yaml_config);
-
-    if ((!defined $block->error_log) && (!defined $block->no_error_log)) {
-        $block->set_value("no_error_log", "[error]");
-    }
-
-    if (!defined $block->request) {
-        $block->set_value("request", "GET /t");
-    }
 
     $block;
 });
@@ -47,33 +38,7 @@ run_tests;
 
 __DATA__
 
-=== TEST 1: pre-create public API route
---- config
-    location /t {
-        content_by_lua_block {
-            local t = require("lib.test_admin").test
-            local code, body = t('/apisix/admin/routes/1',
-                 ngx.HTTP_PUT,
-                 [[{
-                        "plugins": {
-                            "public-api": {}
-                        },
-                        "uri": "/apisix/status"
-                 }]]
-                )
-
-            if code >= 300 then
-                ngx.status = code
-            end
-            ngx.say(body)
-        }
-    }
---- response_body
-passed
-
-
-
-=== TEST 2: sanity
+=== TEST 1: sanity
 --- config
 location /t {
     content_by_lua_block {
@@ -87,19 +52,23 @@ location /t {
         ngx.say(body_org)
     }
 }
+--- request
+GET /t
 --- response_body eval
 qr/"accepted":/
+--- no_error_log
+[error]
 
 
 
-=== TEST 3: test for unsupported method
+=== TEST 2: test for unsupported method
 --- request
 PATCH /apisix/status
 --- error_code: 404
 
 
 
-=== TEST 4: test for use default uuid as apisix_uid
+=== TEST 3: test for use default uuid as apisix_uid
 --- config
 location /t {
     content_by_lua_block {
@@ -115,12 +84,16 @@ location /t {
         ngx.say(body_json.id)
     }
 }
+--- request
+GET /t
 --- response_body_like eval
 qr/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/
+--- no_error_log
+[error]
 
 
 
-=== TEST 5: test for allow user to specify a meaningful id as apisix_uid
+=== TEST 4: test for allow user to specify a meaningful id as apisix_uid
 --- yaml_config
 apisix:
     id: "user-set-apisix-instance-id-A"
@@ -138,5 +111,9 @@ location /t {
         ngx.say(body_org)
     }
 }
+--- request
+GET /t
 --- response_body eval
 qr/"id":"user-set-apisix-instance-id-A"/
+--- no_error_log
+[error]

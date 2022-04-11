@@ -26,7 +26,6 @@ title: CHANGELOG
 - [2.12.1](#2121)
 - [2.12.0](#2120)
 - [2.11.0](#2110)
-- [2.10.4](#2104)
 - [2.10.3](#2103)
 - [2.10.2](#2102)
 - [2.10.1](#2101)
@@ -55,7 +54,10 @@ title: CHANGELOG
 
 ## 2.12.1
 
-**这是一个 LTS 维护版本，您可以在 `release/2.12` 分支中看到 CHANGELOG。**
+### Bugfix
+
+- batch-requests 插件应当覆盖 real ip 请求头 [#6251](https://github.com/apache/apisix/pull/6251)
+- batch-requests 插件应当默认不启用 [#6204](https://github.com/apache/apisix/pull/6204)
 
 ## 2.12.0
 
@@ -135,12 +137,6 @@ title: CHANGELOG
 - :sunrise: proxy-cache 支持基于内存的缓存机制 [#5028](https://github.com/apache/apisix/pull/5028)
 - :sunrise: ext-plugin 避免发送重复的 conf 请求 [#5183](https://github.com/apache/apisix/pull/5183)
 - :sunrise: 新增 ldap-auth 插件 [#3894](https://github.com/apache/apisix/pull/3894)
-
-## 2.10.4
-
-**这是一个 LTS 维护版本，您可以在 `release/2.10` 分支中看到 CHANGELOG。**
-
-[https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2104](https://github.com/apache/apisix/blob/release/2.10/CHANGELOG.md#2104)
 
 ## 2.10.3
 

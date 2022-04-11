@@ -21,25 +21,19 @@ title: Route
 #
 -->
 
-Routes match the client's request based on defined rules, loads and executes the corresponding [plugins](./plugin.md), and forwards the request to the specified [Upstream](./upstream.md).
+The route matches the client's request by defining rules, then loads and executes the corresponding plugin based on the matching result, and forwards the request to the specified Upstream.
 
-A Route mainly consists of three parts:
+The route mainly consists of three parts: matching rules (e.g uri, host, remote_addr, etc.), plugin configuration (current-limit & rate-limit, etc.) and upstream information.
 
-1. Matching rules (uri, host, remote address)
-2. Plugin configuration (current-limit, rate-limit)
-3. Upstream information
-
-The image below shows some example Route rules. Note that the values are of the same color if they are identical.
+The following image shows an example of some Route rules. When some attribute values are the same, the figure is identified by the same color.
 
 ![routes-example](../../../assets/images/routes-example.png)
 
-All the parameters are configured directly in the Route. It is easy to set up, and each Route has a high degree of freedom.
+We configure all the parameters directly in the Route, it's easy to set up, and each Route has a relatively high degree of freedom. But when our Route has more repetitive configurations (such as enabling the same plugin configuration or upstream information), once we need update these same properties, we have to traverse all the Routes and modify them, so it's adding a lot of complexity of management and maintenance.
 
-When Routes have repetitive configurations (say, enabling the same plugin configuration or Upstream information), to update it, we need to traverse all the Routes and modify them. This adds a lot of complexity, making it difficult to maintain.
+The shortcomings mentioned above are independently abstracted in APISIX by the two concepts [Service](service.md) and [Upstream](upstream.md).
 
-These shortcomings are independently abstracted in APISIX by two concepts: [Service](service.md) and [Upstream](upstream.md).
-
-The Route example shown below proxies the request with the URL `/index.html` to the Upstream service with the address `127.0.0.1:1980`.
+The route example created below is to proxy the request with URL `/index.html` to the Upstream service with the address `127.0.0.1:1980`:
 
 ```shell
 $ curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f136f87ad84b625c8f1' -X PUT -i -d '
@@ -52,9 +46,7 @@ $ curl http://127.0.0.1:9080/apisix/admin/routes/1 -H 'X-API-KEY: edd1c9f034335f
         }
     }
 }'
-```
 
-```shell
 HTTP/1.1 201 Created
 Date: Sat, 31 Aug 2019 01:17:15 GMT
 Content-Type: text/plain
@@ -65,6 +57,6 @@ Server: APISIX web server
 {"node":{"value":{"uri":"\/index.html","upstream":{"nodes":{"127.0.0.1:1980":1},"type":"roundrobin"}},"createdIndex":61925,"key":"\/apisix\/routes\/1","modifiedIndex":61925},"action":"create"}
 ```
 
-A successful response indicates that the route was created.
+When we receive a successful response, it indicates that the route was successfully created.
 
-For specific options of Route, please refer to the [Admin API](../admin-api.md#route).
+For specific options of Route, please refer to [Admin API](../admin-api.md#route).

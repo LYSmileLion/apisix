@@ -96,7 +96,6 @@ function _M.get(id)
         return 503, {error_msg = err}
     end
 
-    utils.fix_count(res.body, id)
     return res.status, res.body
 end
 

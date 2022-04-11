@@ -30,13 +30,11 @@ script() {
     export_or_prefix
     openresty -V
 
-    sudo rm -rf /usr/local/share/lua/5.1/apisix
+    sudo rm -rf /usr/local/apisix
 
     # install APISIX with local version
     sudo luarocks install rockspec/apisix-master-0.rockspec --only-deps > build.log 2>&1 || (cat build.log && exit 1)
     sudo luarocks make rockspec/apisix-master-0.rockspec > build.log 2>&1 || (cat build.log && exit 1)
-    # ensure all files under apisix is installed
-    diff -rq apisix /usr/local/share/lua/5.1/apisix
 
     mkdir cli_tmp && cd cli_tmp
 
@@ -48,7 +46,7 @@ script() {
     sudo PATH=$PATH apisix start
     sudo PATH=$PATH apisix stop
 
-    grep '\[error\]' /usr/local/apisix/logs/error.log > /tmp/error.log | true
+    cat /usr/local/apisix/logs/error.log | grep '\[error\]' > /tmp/error.log | true
     if [ -s /tmp/error.log ]; then
         echo "=====found error log====="
         cat /usr/local/apisix/logs/error.log

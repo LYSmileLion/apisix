@@ -94,6 +94,7 @@ local labels_def = {
     patternProperties = {
         [".*"] = label_value_def
     },
+    maxProperties = 16
 }
 
 
